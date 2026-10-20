@@ -1,9 +1,10 @@
 --- a/bsd/kern/bsd_init.c
 +++ b/bsd/kern/bsd_init.c
-@@ -1566,3 +1566,68 @@
+@@ -1566,3 +1566,71 @@
  	return 0;
  }
  #endif
++++ b/bsd/kern/bsd_init.c
 +
 +#if defined(ARM64_BOARD_CONFIG_SWEET)
 +/* ---- STAR bring-up instrumentation ---------------------------------- */
@@ -52,6 +53,8 @@
 +#define STAR_WDT_RST  0x0004
 +#define STAR_WDT_EN   0x0008
 +#define STAR_WDT_STS  0x000c
++
++extern vm_offset_t ml_io_map(vm_offset_t phys_addr, vm_size_t size);
 +
 +__startup_func
 +static void
