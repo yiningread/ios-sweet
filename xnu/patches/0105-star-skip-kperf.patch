@@ -1,0 +1,17 @@
+--- a/osfmk/kern/startup.c
++++ b/osfmk/kern/startup.c
+@@ -780,8 +780,14 @@
+ 
+ 
+ #if KPERF
++#if defined(ARM64_BOARD_CONFIG_SWEET)
++	/* STAR: kperf_init_early() never returns on this SoC (PMU/FIQ differences).
++	 * kperf is optional instrumentation, so skip it during bring-up. */
++	kprintf("STAR BOOT: kperf_init_early skipped\n");
++#else
+ 	kperf_init_early();
+ #endif
++#endif
+ 
+ 	/*
+ 	 *	Start the user bootstrap.
