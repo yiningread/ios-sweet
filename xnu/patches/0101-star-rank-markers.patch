@@ -1,15 +1,12 @@
 --- a/bsd/kern/bsd_init.c
 +++ b/bsd/kern/bsd_init.c
-@@ -1566,3 +1566,45 @@
+@@ -1566,3 +1566,68 @@
  	return 0;
  }
  #endif
 +
 +#if defined(ARM64_BOARD_CONFIG_SWEET)
-+/*
-+ * STAR bring-up: rank markers. Every marker prints its startup rank; the last
-+ * one visible on the framebuffer console tells which rank range hangs.
-+ */
++/* ---- STAR bring-up instrumentation ---------------------------------- */
 +#define STAR_MARK(rank_) \
 +	__startup_func static void star_mark_##rank_(void) \
 +	{ kprintf("STAR RANK %d\n", (int)(rank_)); } \
@@ -45,4 +42,30 @@
 +STAR_MARK(268435456)
 +STAR_MARK(536870912)
 +STAR_MARK(2147483646)
++
++/*
++ * The bootloader leaves Qualcomm's APCS watchdog (qcom,wdt@17c10000) running
++ * and nothing in this port pets it: the SoC resets ~20-30 s into boot.
++ * Disable it outright (research kernel, no watchdog wanted).
++ */
++#define STAR_WDT_BASE 0x17c10000UL
++#define STAR_WDT_RST  0x0004
++#define STAR_WDT_EN   0x0008
++#define STAR_WDT_STS  0x000c
++
++__startup_func
++static void
++star_wdt_disable(void)
++{
++	volatile uint32_t *wdt = (volatile uint32_t *)ml_io_map(STAR_WDT_BASE, 0x1000);
++	if (wdt == NULL) {
++		kprintf("STAR WDT: map failed\n");
++		return;
++	}
++	wdt[STAR_WDT_EN / 4] = 0;
++	wdt[STAR_WDT_RST / 4] = 1;
++	__asm__ volatile("dsb sy" ::: "memory");
++	kprintf("STAR WDT: APCS watchdog disabled (status 0x%x)\n", wdt[STAR_WDT_STS / 4]);
++}
++STARTUP(EARLY_BOOT, STARTUP_RANK_NTH(2), star_wdt_disable);
 +#endif /* ARM64_BOARD_CONFIG_SWEET */
