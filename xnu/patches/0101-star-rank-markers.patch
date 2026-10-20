@@ -1,0 +1,48 @@
+--- a/bsd/kern/bsd_init.c
++++ b/bsd/kern/bsd_init.c
+@@ -1566,3 +1566,45 @@
+ 	return 0;
+ }
+ #endif
++
++#if defined(ARM64_BOARD_CONFIG_SWEET)
++/*
++ * STAR bring-up: rank markers. Every marker prints its startup rank; the last
++ * one visible on the framebuffer console tells which rank range hangs.
++ */
++#define STAR_MARK(rank_) \
++	__startup_func static void star_mark_##rank_(void) \
++	{ kprintf("STAR RANK %d\n", (int)(rank_)); } \
++	STARTUP(EARLY_BOOT, (startup_rank_t)(rank_), star_mark_##rank_);
++
++STAR_MARK(2)
++STAR_MARK(4)
++STAR_MARK(8)
++STAR_MARK(16)
++STAR_MARK(32)
++STAR_MARK(64)
++STAR_MARK(128)
++STAR_MARK(256)
++STAR_MARK(512)
++STAR_MARK(1024)
++STAR_MARK(2048)
++STAR_MARK(4096)
++STAR_MARK(8192)
++STAR_MARK(16384)
++STAR_MARK(32768)
++STAR_MARK(65536)
++STAR_MARK(131072)
++STAR_MARK(262144)
++STAR_MARK(524288)
++STAR_MARK(1048576)
++STAR_MARK(2097152)
++STAR_MARK(4194304)
++STAR_MARK(8388608)
++STAR_MARK(16777216)
++STAR_MARK(33554432)
++STAR_MARK(67108864)
++STAR_MARK(134217728)
++STAR_MARK(268435456)
++STAR_MARK(536870912)
++STAR_MARK(2147483646)
++#endif /* ARM64_BOARD_CONFIG_SWEET */
