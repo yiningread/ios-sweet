@@ -1,0 +1,50 @@
+--- a/bsd/kern/bsd_init.c
++++ b/bsd/kern/bsd_init.c
+@@ -850,11 +850,23 @@
+ 	 * the clients that are waiting for the networking stack to be usable.
+ 	 */
+ 	bsd_init_kprintf("calling net_init_run\n");
++#if defined(ARM64_BOARD_CONFIG_SWEET)
++	kprintf("STAR BSD: before net_init_run\n");
++#endif
+ 	net_init_run();
++#if defined(ARM64_BOARD_CONFIG_SWEET)
++	kprintf("STAR BSD: net_init_run done\n");
++#endif
+ #endif /* NETWORKING */
+ 
+ 	bsd_init_kprintf("calling inittodr\n");
++#if defined(ARM64_BOARD_CONFIG_SWEET)
++	kprintf("STAR BSD: before inittodr\n");
++#endif
+ 	inittodr(0);
++#if defined(ARM64_BOARD_CONFIG_SWEET)
++	kprintf("STAR BSD: inittodr done\n");
++#endif
+ 
+ 	/* Mount the root file system. */
+ 	while (TRUE) {
+@@ -867,7 +879,13 @@
+ #endif
+ 
+ 		bsd_init_kprintf("vfs_mountroot\n");
++#if defined(ARM64_BOARD_CONFIG_SWEET)
++		kprintf("STAR BSD: calling vfs_mountroot\n");
++#endif
+ 		if (0 == (err = vfs_mountroot())) {
++#if defined(ARM64_BOARD_CONFIG_SWEET)
++			kprintf("STAR BSD: vfs_mountroot OK, root=%s\n", rootdevice);
++#endif
+ 			break;
+ 		}
+ 		rootdevice[0] = '\0';
+@@ -884,6 +902,9 @@
+ 			/*NOTREACHED*/
+ 		}
+ #endif
++#if defined(ARM64_BOARD_CONFIG_SWEET)
++		kprintf("STAR BSD: vfs_mountroot FAILED errno=%d\n", err);
++#endif
+ 		printf("cannot mount root, errno = %d\n", err);
+ 	}
+ 
