@@ -1,0 +1,57 @@
+--- a/bsd/kern/bsd_init.c
++++ b/bsd/kern/bsd_init.c
+@@ -476,6 +476,9 @@
+ void
+ bsd_init(void)
+ {
++#if defined(ARM64_BOARD_CONFIG_SWEET)
++	star_paint(0xffff0000);	/* RED: entered bsd_init */
++#endif
+ 	struct uthread *ut;
+ 	vnode_t init_rootvnode = NULLVP;
+ 	struct proc_ro_data kernproc_ro_data = {
+@@ -856,6 +859,9 @@
+ 	bsd_init_kprintf("calling inittodr\n");
+ 	inittodr(0);
+ 
++#if defined(ARM64_BOARD_CONFIG_SWEET)
++	star_paint(0xff00ff00);	/* GREEN: before mountroot */
++#endif
+ 	/* Mount the root file system. */
+ 	while (TRUE) {
+ 		int err;
+@@ -887,6 +893,9 @@
+ 		printf("cannot mount root, errno = %d\n", err);
+ 	}
+ 
++#if defined(ARM64_BOARD_CONFIG_SWEET)
++	star_paint(0xff0000ff);	/* BLUE: root mounted */
++#endif
+ 	IOSecureBSDRoot(rootdevice);
+ 
+ 	mountlist.tqh_first->mnt_flag |= MNT_ROOTFS;
+@@ -1566,3 +1575,24 @@
+ 	return 0;
+ }
+ #endif
++
++#if defined(ARM64_BOARD_CONFIG_SWEET)
++/* ---- STAR stage colours (read the screen background, not the text) ---- */
++extern vm_offset_t ml_io_map(vm_offset_t phys_addr, vm_size_t size);
++
++#define STAR_FB_BASE   0xea600000UL
++#define STAR_FB_BYTES  0x119c000UL   /* 1440 * 3200 * 4, the splash carve-out */
++
++static void
++star_paint(uint32_t color)
++{
++	volatile uint32_t *fb = (volatile uint32_t *)ml_io_map(STAR_FB_BASE, STAR_FB_BYTES);
++	if (fb == NULL) {
++		return;
++	}
++	for (unsigned i = 0; i < STAR_FB_BYTES / 4; i++) {
++		fb[i] = color;
++	}
++	__asm__ volatile("dsb sy" ::: "memory");
++}
++#endif /* ARM64_BOARD_CONFIG_SWEET */
