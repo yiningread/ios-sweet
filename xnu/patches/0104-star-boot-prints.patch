@@ -1,0 +1,39 @@
+--- a/osfmk/kern/startup.c
++++ b/osfmk/kern/startup.c
+@@ -770,13 +770,22 @@
+ 
+ #ifdef  IOKIT
+ 	kernel_bootstrap_log("PE_lockdown_iokit");
++#if defined(ARM64_BOARD_CONFIG_SWEET)
++	kprintf("STAR BOOT: entering PE_lockdown_iokit\n");
++#endif
+ 	PE_lockdown_iokit();
++#if defined(ARM64_BOARD_CONFIG_SWEET)
++	kprintf("STAR BOOT: PE_lockdown_iokit returned\n");
++#endif
+ #endif
+ 	/*
+ 	 * max_cpus must be nailed down by the time PE_lockdown_iokit() finishes,
+ 	 * at the latest
+ 	 */
+ 	vm_set_restrictions(machine_info.max_cpus);
++#if defined(ARM64_BOARD_CONFIG_SWEET)
++	kprintf("STAR BOOT: vm_set_restrictions done (max_cpus %u)\n", machine_info.max_cpus);
++#endif
+ 
+ 
+ #if KPERF
+@@ -787,7 +796,13 @@
+ 	 *	Start the user bootstrap.
+ 	 */
+ #ifdef  MACH_BSD
++#if defined(ARM64_BOARD_CONFIG_SWEET)
++	kprintf("STAR BOOT: entering bsd_init\n");
++#endif
+ 	bsd_init();
++#if defined(ARM64_BOARD_CONFIG_SWEET)
++	kprintf("STAR BOOT: bsd_init returned\n");
++#endif
+ #endif
+ 
+ 
