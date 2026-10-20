@@ -1,0 +1,8 @@
+ 	__builtin_arm_wsr64("CNTV_CTL_EL0", cntvctl);
++#if defined(SWEET_KEEP_PHYS_TIMER)
+ 	/* disable the physical timer as a precaution ... */
+ 	__builtin_arm_wsr64("CNTP_CTL_EL0", CNTP_CTL_EL0_IMASKED);
++#else
++	/* STAR: EL1 访问 CNTP_* 是 UNDEFINED（hypervisor 关掉了 EL1PCEN） */
++#endif
+ }
