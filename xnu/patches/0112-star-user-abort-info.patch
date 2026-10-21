@@ -1,6 +1,14 @@
 --- a/osfmk/arm64/sleh.c
 +++ b/osfmk/arm64/sleh.c
-@@ -1364,6 +1364,15 @@
+@@ -46,6 +46,7 @@
+ #include <mach/exception.h>
+ #include <mach/arm/traps.h>
+ #include <mach/vm_types.h>
++#include <sys/uio.h>
+ #include <mach/machine/thread_status.h>
+ 
+ #include <machine/atomic.h>
+@@ -1364,6 +1365,28 @@
  	(void)esr;
  	(void)expected_fault_handler;
  
@@ -10,6 +18,19 @@
 +		    esr, (uint64_t)fault_addr, (uint64_t)saved_state64(state)->pc,
 +		    (uint64_t)saved_state64(state)->x[30], (uint64_t)saved_state64(state)->x[29],
 +		    (uint64_t)saved_state64(state)->x[19], (uint64_t)saved_state64(state)->x[20]);
++		if ((uint64_t)saved_state64(state)->pc > 0x100000000ULL) {
++			uint64_t bt_fp = (uint64_t)saved_state64(state)->x[29];
++			for (int bti = 0; bti < 6 && bt_fp; bti++) {
++				uint64_t frame[2] = { 0, 0 };
++				if (copyin((user_addr_t)bt_fp, frame, sizeof(frame)) != 0) {
++					kprintf("STAR BT[%d]: unreadable fp=0x%llx\n", bti, bt_fp);
++					break;
++				}
++				kprintf("STAR BT[%d]: next_fp=0x%llx lr=0x%llx\n",
++				    bti, frame[0], frame[1]);
++				bt_fp = frame[0];
++			}
++		}
 +	}
 +#endif
 +
