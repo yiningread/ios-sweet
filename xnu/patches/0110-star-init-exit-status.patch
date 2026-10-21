@@ -1,0 +1,13 @@
+--- a/bsd/kern/kern_exit.c
++++ b/bsd/kern/kern_exit.c
+@@ -1789,6 +1789,10 @@
+ 	}
+ #endif /* DEVELOPMENT */
+ 
++#if defined(ARM64_BOARD_CONFIG_SWEET)
++	printf("STAR EXIT: pid=%d name=%s rv=0x%x sig=%d status=%d spawned=%d\n",
++	    proc_getpid(p), p->p_name, rv, WTERMSIG(rv), WEXITSTATUS(rv), initproc_spawned);
++#endif
+ 	char *exit_reason_desc = exit_reason_get_string_desc(p->p_exit_reason);
+ 
+ 	if (p->p_exit_reason == OS_REASON_NULL) {
