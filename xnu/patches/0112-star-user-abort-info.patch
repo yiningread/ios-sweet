@@ -1,14 +1,15 @@
 --- a/osfmk/arm64/sleh.c
 +++ b/osfmk/arm64/sleh.c
-@@ -1364,6 +1364,14 @@
+@@ -1364,6 +1364,15 @@
  	(void)esr;
  	(void)expected_fault_handler;
  
 +#if defined(ARM64_BOARD_CONFIG_SWEET)
 +	if (is_saved_state64(state)) {
-+		kprintf("STAR UABORT: esr=0x%x far=0x%llx pc=0x%llx x0=0x%llx x1=0x%llx\n",
++		kprintf("STAR UABORT: esr=0x%x far=0x%llx pc=0x%llx lr=0x%llx fp=0x%llx x19=0x%llx x20=0x%llx\n",
 +		    esr, (uint64_t)fault_addr, (uint64_t)saved_state64(state)->pc,
-+		    (uint64_t)saved_state64(state)->x[0], (uint64_t)saved_state64(state)->x[1]);
++		    (uint64_t)saved_state64(state)->x[30], (uint64_t)saved_state64(state)->x[29],
++		    (uint64_t)saved_state64(state)->x[19], (uint64_t)saved_state64(state)->x[20]);
 +	}
 +#endif
 +
