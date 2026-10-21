@@ -1,0 +1,14 @@
+--- a/osfmk/arm64/sleh.c
++++ b/osfmk/arm64/sleh.c
+@@ -1372,6 +1372,11 @@
+ 		    esr, (uint64_t)fault_addr, (uint64_t)ss64->pc,
+ 		    (uint64_t)ss64->x[30], (uint64_t)ss64->x[29], (uint64_t)ss64->x[19]);
+ 		if ((uint64_t)ss64->pc > 0x100000000ULL) {
++			kprintf("STAR A: pc=%08x%08x lr=%08x%08x x19=%08x%08x far=%08x%08x\n",
++			    (uint32_t)((uint64_t)ss64->pc >> 32), (uint32_t)(uint64_t)ss64->pc,
++			    (uint32_t)((uint64_t)ss64->x[30] >> 32), (uint32_t)(uint64_t)ss64->x[30],
++			    (uint32_t)((uint64_t)ss64->x[19] >> 32), (uint32_t)(uint64_t)ss64->x[19],
++			    (uint32_t)((uint64_t)fault_addr >> 32), (uint32_t)(uint64_t)fault_addr);
+ 			uint64_t bt_fp = (uint64_t)ss64->x[29];
+ 			for (int bti = 0; bti < 6 && bt_fp; bti++) {
+ 				uint64_t frame[2] = { 0, 0 };
