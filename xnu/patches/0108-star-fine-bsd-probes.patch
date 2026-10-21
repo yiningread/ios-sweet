@@ -5,7 +5,7 @@
  {
  	errno_t error;
 +#if defined(ARM64_BOARD_CONFIG_SWEET)
-+	kprintf("STAR NET: iptap_init enter\n");
++	printf("STAR NET: iptap_init enter\n");
 +#endif
  
  	error = if_clone_attach(&iptap_cloner);
@@ -17,7 +17,7 @@
  	kern_return_t result;
  	int i;
 +#if defined(ARM64_BOARD_CONFIG_SWEET)
-+	kprintf("STAR MEM: memorystatus_init enter\n");
++	printf("STAR MEM: memorystatus_init enter\n");
 +#endif
  
  #if CONFIG_FREEZE
@@ -29,7 +29,7 @@
  sysctl_mib_init(void)
  {
 +#if defined(ARM64_BOARD_CONFIG_SWEET)
-+	kprintf("STAR SYSCTL: sysctl_mib_init enter\n");
++	printf("STAR SYSCTL: sysctl_mib_init enter\n");
 +#endif
  #if defined(__i386__) || defined (__x86_64__)
  	cpu64bit = (_get_cpu_capabilities() & k64Bit) == k64Bit;
