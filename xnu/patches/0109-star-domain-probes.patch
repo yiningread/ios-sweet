@@ -1,0 +1,19 @@
+--- a/bsd/kern/uipc_domain.c
++++ b/bsd/kern/uipc_domain.c
+@@ -742,8 +742,15 @@
+ 	 * Now ask them all to init (XXX including the routing domain,
+ 	 * see above)
+ 	 */
+-	TAILQ_FOREACH(dp, &domains, dom_entry)
++	TAILQ_FOREACH(dp, &domains, dom_entry) {
++#if defined(ARM64_BOARD_CONFIG_SWEET)
++		kprintf("STAR DOM: init domain family %d\n", dp->dom_family);
++#endif
+ 	init_domain(dp);
++#if defined(ARM64_BOARD_CONFIG_SWEET)
++		kprintf("STAR DOM: domain family %d done\n", dp->dom_family);
++#endif
++	}
+ 
+ 	domain_guard_release(guard);
+ }
