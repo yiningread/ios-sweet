@@ -1,0 +1,66 @@
+--- a/bsd/net/iptap.c
++++ b/bsd/net/iptap.c
+@@ -139,6 +139,9 @@
+ iptap_init(void)
+ {
+ 	errno_t error;
++#if defined(ARM64_BOARD_CONFIG_SWEET)
++	kprintf("STAR NET: iptap_init enter\n");
++#endif
+ 
+ 	error = if_clone_attach(&iptap_cloner);
+ 	if (error != 0) {
+--- a/bsd/kern/kern_memorystatus.c
++++ b/bsd/kern/kern_memorystatus.c
+@@ -1311,6 +1311,9 @@
+ {
+ 	kern_return_t result;
+ 	int i;
++#if defined(ARM64_BOARD_CONFIG_SWEET)
++	kprintf("STAR MEM: memorystatus_init enter\n");
++#endif
+ 
+ #if CONFIG_FREEZE
+ 	memorystatus_freeze_jetsam_band = JETSAM_PRIORITY_FREEZER;
+--- a/bsd/kern/kern_mib.c
++++ b/bsd/kern/kern_mib.c
+@@ -1277,6 +1277,9 @@
+ void
+ sysctl_mib_init(void)
+ {
++#if defined(ARM64_BOARD_CONFIG_SWEET)
++	kprintf("STAR SYSCTL: sysctl_mib_init enter\n");
++#endif
+ #if defined(__i386__) || defined (__x86_64__)
+ 	cpu64bit = (_get_cpu_capabilities() & k64Bit) == k64Bit;
+ #elif defined (__arm64__)
+--- a/bsd/kern/bsd_init.c
++++ b/bsd/kern/bsd_init.c
+@@ -1084,6 +1084,9 @@
+ {
+ 	kprintf("bsd_autoconf: calling kminit\n");
+ 	kminit();
++#if defined(ARM64_BOARD_CONFIG_SWEET)
++	kprintf("STAR BSD: kminit done\n");
++#endif
+ 
+ 	/*
+ 	 * Early startup for bsd pseudodevices.
+@@ -1096,7 +1099,16 @@
+ 		}
+ 	}
+ 
+-	return IOKitBSDInit();
++#if defined(ARM64_BOARD_CONFIG_SWEET)
++	kprintf("STAR BSD: calling IOKitBSDInit\n");
++#endif
++	{
++		kern_return_t kr = IOKitBSDInit();
++#if defined(ARM64_BOARD_CONFIG_SWEET)
++		kprintf("STAR BSD: IOKitBSDInit done (%d)\n", kr);
++#endif
++		return kr;
++	}
+ }
+ 
+ 
