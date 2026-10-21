@@ -1,0 +1,28 @@
+--- a/bsd/dev/arm/unix_signal.c
++++ b/bsd/dev/arm/unix_signal.c
+@@ -323,6 +323,12 @@
+ 		infostyle = UC_TRAD;
+ 	}
+ 
++#if defined(ARM64_BOARD_CONFIG_SWEET)
++	if (p->p_pid == 1) {
++		kprintf("STAR SIG: pid1 sig=%d infostyle=%d\n", sig, infostyle);
++	}
++#endif
++
+ 	trampact = SIGTRAMP(p, sig);
+ 	oonstack = ut->uu_sigstk.ss_flags & SA_ONSTACK;
+ 
+@@ -428,6 +434,12 @@
+ #if defined(__arm64__)
+ 		sinfo.si_addr = ts.ts64.ss.pc;
+ 		sinfo.pad[0] = ts.ts64.ss.sp;
++#if defined(ARM64_BOARD_CONFIG_SWEET)
++		if (p->p_pid == 1) {
++			kprintf("STAR SIG: pid1 sig=%d pc=0x%llx sp=0x%llx lr=0x%llx\n",
++			    sig, (uint64_t)ts.ts64.ss.pc, (uint64_t)ts.ts64.ss.sp, (uint64_t)ts.ts64.ss.lr);
++		}
++#endif
+ #else
+ #error Unsupported architecture
+ #endif
