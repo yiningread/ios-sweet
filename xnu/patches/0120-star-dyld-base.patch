@@ -1,0 +1,28 @@
+--- a/osfmk/arm64/sleh.c
++++ b/osfmk/arm64/sleh.c
+@@ -46,6 +46,7 @@
+ #include <mach/exception.h>
+ #include <mach/arm/traps.h>
+ #include <mach/vm_types.h>
++#include <kern/task.h>
+ #include <libkern/copyio.h>
+ #include <mach/machine/thread_status.h>
+ 
+@@ -1386,6 +1387,17 @@
+ 		    esr, (uint64_t)fault_addr, (uint64_t)ss64->pc,
+ 		    (uint64_t)ss64->x[30], (uint64_t)ss64->x[29], (uint64_t)ss64->x[19]);
+ 		if ((uint64_t)ss64->pc > 0x100000000ULL) {
++			{
++				mach_vm_address_t di_addr = 0;
++				mach_vm_size_t di_size = 0;
++				if (task_get_dyld_info(current_task(), &di_addr, &di_size) == KERN_SUCCESS && di_addr != 0) {
++					uint64_t dbase = 0;
++					if (copyin((user_addr_t)(di_addr + 0x20), &dbase, sizeof(dbase)) == 0) {
++						kprintf("STAR DYLD: infos=0x%llx base=0x%llx size=%llu\n",
++						    (uint64_t)di_addr, dbase, (uint64_t)di_size);
++					}
++				}
++			}
+ 			kprintf("STAR A: pc=%08x%08x lr=%08x%08x x19=%08x%08x far=%08x%08x\n",
+ 			    (uint32_t)((uint64_t)ss64->pc >> 32), (uint32_t)(uint64_t)ss64->pc,
+ 			    (uint32_t)((uint64_t)ss64->x[30] >> 32), (uint32_t)(uint64_t)ss64->x[30],
