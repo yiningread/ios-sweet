@@ -1,0 +1,25 @@
+--- a/bsd/dev/sweet_ufs.c
++++ b/bsd/dev/sweet_ufs.c
+@@ -796,6 +796,22 @@
+ 	uint32_t on = 1;
+ 	thread_t thread;
+ 
++	{
++		/* STAR: one-shot UFS write/read self test at the log base. */
++		uint64_t tbase = su.first_block + 0x400100;
++		void *bounce = (void *)(su.dma + DMA_BOUNCE);
++		int ew, er;
++
++		bzero(bounce, UFS_BLOCK);
++		memcpy(bounce, "SWEETSLF", 8);
++		lck_mtx_lock(&sweet_ufs_lock);
++		ew = ufs_write_blocks(tbase, 1);
++		er = ufs_read_blocks(tbase, 1);
++		lck_mtx_unlock(&sweet_ufs_lock);
++		printf("STAR SELF: base=0x%llx write=%d read=%d magic=%.8s\n",
++		    tbase, ew, er, (const char *)bounce);
++	}
++
+ 	PE_parse_boot_argn("sweetlog", &on, sizeof(on));
+ 	if (!on || !su.writable || su.nblocks < 2 * SWEET_LOG_BLOCKS) {
+ 		return;
