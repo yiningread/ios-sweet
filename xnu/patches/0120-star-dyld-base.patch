@@ -13,13 +13,13 @@
  		    (uint64_t)ss64->x[30], (uint64_t)ss64->x[29], (uint64_t)ss64->x[19]);
  		if ((uint64_t)ss64->pc > 0x100000000ULL) {
 +			{
-+				mach_vm_address_t di_addr = 0;
-+				mach_vm_size_t di_size = 0;
-+				if (task_get_dyld_info(current_task(), &di_addr, &di_size) == KERN_SUCCESS && di_addr != 0) {
++				task_t tk = current_task();
++				if (tk->all_image_info_addr != 0) {
 +					uint64_t dbase = 0;
-+					if (copyin((user_addr_t)(di_addr + 0x20), &dbase, sizeof(dbase)) == 0) {
-+						kprintf("STAR DYLD: infos=0x%llx base=0x%llx size=%llu\n",
-+						    (uint64_t)di_addr, dbase, (uint64_t)di_size);
++					if (copyin((user_addr_t)(tk->all_image_info_addr + 0x20),
++					    &dbase, sizeof(dbase)) == 0) {
++						kprintf("STAR DYLD: infos=0x%llx base=0x%llx\n",
++						    (uint64_t)tk->all_image_info_addr, dbase);
 +					}
 +				}
 +			}
