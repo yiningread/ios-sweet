@@ -1,0 +1,23 @@
+--- a/osfmk/arm64/sleh.c
++++ b/osfmk/arm64/sleh.c
+@@ -766,6 +766,20 @@
+ 			break;
+ #endif /* CONFIG_UBSAN_MINIMAL */
+ 		} else {
++#if defined(ARM64_BOARD_CONFIG_SWEET)
++			if (is_saved_state64(state)) {
++				arm_saved_state64_t *ss = saved_state64(state);
++				char msg[192];
++				kprintf("STAR BRK: pc=0x%llx x0=0x%llx x1=0x%llx x2=0x%llx\n",
++				    (uint64_t)ss->pc, (uint64_t)ss->x[0], (uint64_t)ss->x[1],
++				    (uint64_t)ss->x[2]);
++				if (ss->x[0] > 0x100000000ULL &&
++				    copyin((user_addr_t)ss->x[0], msg, sizeof(msg) - 1) == 0) {
++					msg[sizeof(msg) - 1] = 0;
++					kprintf("STAR BRK: msg='%s'\n", msg);
++				}
++			}
++#endif
+ 			handle_breakpoint(state, esr);
+ 			__builtin_unreachable();
+ 		}
