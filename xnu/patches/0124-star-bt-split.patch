@@ -1,0 +1,13 @@
+--- a/osfmk/arm64/sleh.c
++++ b/osfmk/arm64/sleh.c
+@@ -1457,7 +1457,9 @@
+ 					kprintf("STAR BT[%d]: unreadable fp=0x%llx\n", bti, bt_fp);
+ 					break;
+ 				}
+-				kprintf("STAR BT[%d]: next_fp=0x%llx lr=0x%llx\n", bti, frame[0], frame[1]);
++				kprintf("STAR BP[%d]: %08x%08x %08x%08x\n", bti,
++				    (uint32_t)(frame[0] >> 32), (uint32_t)frame[0],
++				    (uint32_t)(frame[1] >> 32), (uint32_t)frame[1]);
+ 				bt_fp = frame[0];
+ 			}
+ 		}
