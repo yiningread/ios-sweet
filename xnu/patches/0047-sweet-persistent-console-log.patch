@@ -16,7 +16,7 @@
  
  #define REG_CAP         0x00
  #define REG_IS          0x20
-@@ -591,9 +596,158 @@
+@@ -591,9 +596,116 @@
  	printf("SWEET UFS: \"%s\" on LUN %u: first block 0x%llx, %llu MiB, %s, DMA at 0x%llx\n",
  	    want, su.lun, su.first_block, su.nblocks * UFS_BLOCK >> 20,
  	    su.writable ? "read-write" : "read-only", su.dma_pa);
@@ -68,16 +68,12 @@
 +static void
 +sweet_log_thread(__unused void *arg, __unused wait_result_t wr)
 +{
-+	/* STAR: the LUN is bigger than the userdata GPT partition, so the old
-	 * 'end of LUN' computation landed past the partition and every write
-	 * failed. Put the log at 16 GiB + 1 MiB, just past the 16 GiB root image. */
-	uint64_t base = su.first_block + 0x400100;
++	uint64_t base = su.first_block + su.nblocks - SWEET_LOG_BLOCKS;
 +	uint64_t flushed = 0, seq = 0;
 +	void *bounce = (void *)(su.dma + DMA_BOUNCE);
 +
 +	printf("SWEET LOG: console log to the last %u KiB of the partition (block 0x%llx)\n",
 +	    SWEET_LOG_BLOCKS * UFS_BLOCK >> 10, base);
-+	sweet_log_dump_previous(base);
 +	for (;;) {
 +		(void)tsleep(&sweet_log_chan, PZERO, "sweetlog", hz);
 +		uint64_t total = os_atomic_load(&sweet_log_total, relaxed);
@@ -119,48 +115,6 @@
 +	}
 +}
 +
-+
-+static void
-+sweet_log_dump_previous(uint64_t base)
-+{
-+	void *bounce = (void *)(su.dma + DMA_BOUNCE);
-+	struct sweet_log_header *h = (struct sweet_log_header *)bounce;
-+	uint64_t total, size, n, off;
-+	int error;
-+
-+	lck_mtx_lock(&sweet_ufs_lock);
-+	error = ufs_read_blocks(base, 1);
-+	lck_mtx_unlock(&sweet_ufs_lock);
-+	if (error || memcmp(h->magic, "SWEETLOG", 8) != 0) {
-+		printf("SWEET LOG: no previous log (err %d)\n", error);
-+		return;
-+	}
-+	total = h->total;
-+	size = h->size;
-+	if (size == 0) {
-+		return;
-+	}
-+	n = MIN(total, (uint64_t)0x10000);
-+	printf("SWEET LOG: previous log total=%llu, dumping last %llu bytes\n", total, n);
-+	for (off = 0; off < n; ) {
-+		uint64_t ring = (total - n + off) % size;
-+		uint32_t blk = (uint32_t)(ring / UFS_BLOCK) + 1;
-+		uint32_t in  = (uint32_t)(ring % UFS_BLOCK);
-+		uint32_t len = (uint32_t)MIN((uint64_t)(UFS_BLOCK - in), n - off);
-+
-+		lck_mtx_lock(&sweet_ufs_lock);
-+		error = ufs_read_blocks(base + blk, 1);
-+		lck_mtx_unlock(&sweet_ufs_lock);
-+		if (error) {
-+			break;
-+		}
-+		kprintf("SWL: %.*s", (int)len, (char *)bounce + in);
-+		off += len;
-+	}
-+	printf("\nSWEET LOG: end of previous log\n");
-+}
-+
-
 +static void
 +sweet_log_start(void)
 +{
