@@ -68,7 +68,10 @@
 +static void
 +sweet_log_thread(__unused void *arg, __unused wait_result_t wr)
 +{
-+	uint64_t base = su.first_block + su.nblocks - SWEET_LOG_BLOCKS;
++	/* STAR: the LUN is bigger than the userdata GPT partition, so the old
+	 * 'end of LUN' computation landed past the partition and every write
+	 * failed. Put the log at 16 GiB + 1 MiB, just past the 16 GiB root image. */
+	uint64_t base = su.first_block + 0x400100;
 +	uint64_t flushed = 0, seq = 0;
 +	void *bounce = (void *)(su.dma + DMA_BOUNCE);
 +
