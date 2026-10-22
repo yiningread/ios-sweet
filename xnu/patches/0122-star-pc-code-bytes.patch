@@ -1,0 +1,21 @@
+--- a/osfmk/arm64/sleh.c
++++ b/osfmk/arm64/sleh.c
+@@ -1386,6 +1386,18 @@
+ 		    esr, (uint64_t)fault_addr, (uint64_t)ss64->pc,
+ 		    (uint64_t)ss64->x[30], (uint64_t)ss64->x[29], (uint64_t)ss64->x[19]);
+ 		if ((uint64_t)ss64->pc > 0x100000000ULL) {
++			{
++				/* 打印 pc 附近 32 字节指令：不依赖任何基址即可定位 */
++				uint32_t code[8] = { 0 };
++				user_addr_t at = (user_addr_t)((uint64_t)ss64->pc - 16);
++				if (copyin(at, code, sizeof(code)) == 0) {
++					kprintf("STAR CODE: pc-16: %08x %08x %08x %08x %08x %08x %08x %08x\n",
++					    code[0], code[1], code[2], code[3],
++					    code[4], code[5], code[6], code[7]);
++				} else {
++					kprintf("STAR CODE: unreadable at 0x%llx\n", (uint64_t)at);
++				}
++			}
+ 			kprintf("STAR A: pc=%08x%08x lr=%08x%08x x19=%08x%08x far=%08x%08x\n",
+ 			    (uint32_t)((uint64_t)ss64->pc >> 32), (uint32_t)(uint64_t)ss64->pc,
+ 			    (uint32_t)((uint64_t)ss64->x[30] >> 32), (uint32_t)(uint64_t)ss64->x[30],
