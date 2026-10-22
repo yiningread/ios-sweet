@@ -1,0 +1,17 @@
+--- a/osfmk/arm64/sleh.c
++++ b/osfmk/arm64/sleh.c
+@@ -1381,6 +1381,14 @@
+ 
+ #if defined(ARM64_BOARD_CONFIG_SWEET)
+ 	if (is_saved_state64(state)) {
++		extern uint64_t star_pager_fnv;
++		extern unsigned char star_pager_head[8];
++		if (star_pager_fnv != 0) {
++			kprintf("STAR PAGERST: fnv=0x%llx head=%02x%02x%02x%02x%02x%02x%02x%02x\n",
++			    star_pager_fnv, star_pager_head[0], star_pager_head[1],
++			    star_pager_head[2], star_pager_head[3], star_pager_head[4],
++			    star_pager_head[5], star_pager_head[6], star_pager_head[7]);
++		}
+ 		arm_saved_state64_t *ss64 = saved_state64(state);
+ 		kprintf("STAR UABORT: esr=0x%x far=0x%llx pc=0x%llx lr=0x%llx fp=0x%llx x19=0x%llx\n",
+ 		    esr, (uint64_t)fault_addr, (uint64_t)ss64->pc,
