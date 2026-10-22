@@ -1,29 +1,36 @@
 --- a/bsd/kern/bsd_init.c
 +++ b/bsd/kern/bsd_init.c
-@@ -889,6 +889,10 @@
- 		if (0 == (err = vfs_mountroot())) {
- #if defined(ARM64_BOARD_CONFIG_SWEET)
- 			kprintf("STAR BSD: vfs_mountroot OK, root=%s\n", rootdevice);
-+			{
-+				extern void star_pager_probe(void);
-+				star_pager_probe();
-+			}
- #endif
- 			break;
- 		}
-@@ -1104,6 +1108,52 @@
+@@ -80,6 +80,18 @@
+  */
+ 
+ #include <sys/param.h>
++
++#if defined(ARM64_BOARD_CONFIG_SWEET)
++/*
++ * STAR: read 4 KiB from deep inside one shared-cache subfile through the vnode
++ * pager. dyld reaches the same bytes with mmap; a mismatch here means the
++ * cache contents dyld parses are not what the image holds.
++ */
++uint64_t star_pager_fnv;
++int star_pager_err;
++unsigned char star_pager_head[8];
++void star_pager_probe(void);
++#endif
+ #include <sys/filedesc.h>
+ #include <sys/kernel.h>
+ #include <sys/mount_internal.h>
+@@ -1100,10 +1112,52 @@
+ 
+ 	bsd_init_kprintf("bsd_do_post - done");
+ 
++#if defined(ARM64_BOARD_CONFIG_SWEET)
++	star_pager_probe();
++#endif
+ 	load_init_program(p);
  	lock_trace = 1;
  }
  
 +#if defined(ARM64_BOARD_CONFIG_SWEET)
-+/*
-+ * STAR: read 4 KiB from deep inside one shared-cache subfile straight through the
-+ * vnode pager. Compared with the same bytes on the host this says whether dyld
-+ * gets the cache contents the file really holds.
-+ */
-+uint64_t star_pager_fnv;
-+unsigned char star_pager_head[8];
-+
 +void
 +star_pager_probe(void)
 +{
@@ -36,28 +43,29 @@
 +
 +	error = vnode_lookup(path, 0, &vp, ctx);
 +	if (error != 0) {
++		star_pager_err = error;
 +		kprintf("STAR PAGER: lookup failed %d\n", error);
 +		return;
 +	}
 +	error = vn_rdwr(UIO_READ, vp, probe_buf, sizeof(probe_buf), (off_t)0x6400000LL,
 +	    UIO_SYSSPACE, 0, kauth_cred_get(), NULL, current_proc());
-+	if (error == 0) {
-+		for (size_t i = 0; i < sizeof(probe_buf); i++) {
-+			fnv ^= (uint8_t)probe_buf[i];
-+			fnv *= 0x100000001b3ULL;
-+		}
-+		for (int i = 0; i < 8; i++) {
-+			star_pager_head[i] = (unsigned char)probe_buf[i];
-+		}
-+		star_pager_fnv = fnv;
-+		kprintf("STAR PAGER: 4K@0x6400000 fnv=0x%llx head=%02x%02x%02x%02x%02x%02x%02x%02x\n",
-+		    fnv, (uint8_t)probe_buf[0], (uint8_t)probe_buf[1], (uint8_t)probe_buf[2],
-+		    (uint8_t)probe_buf[3], (uint8_t)probe_buf[4], (uint8_t)probe_buf[5],
-+		    (uint8_t)probe_buf[6], (uint8_t)probe_buf[7]);
-+	} else {
-+		kprintf("STAR PAGER: vn_rdwr failed %d\n", error);
-+	}
 +	vnode_put(vp);
++	if (error != 0) {
++		star_pager_err = error;
++		kprintf("STAR PAGER: vn_rdwr failed %d\n", error);
++		return;
++	}
++	for (size_t i = 0; i < sizeof(probe_buf); i++) {
++		fnv ^= (uint8_t)probe_buf[i];
++		fnv *= 0x100000001b3ULL;
++	}
++	for (int i = 0; i < 8; i++) {
++		star_pager_head[i] = (unsigned char)probe_buf[i];
++	}
++	star_pager_fnv = fnv;
++	kprintf("STAR PAGER: 4K@0x6400000 fnv=0x%llx head=%02x%02x%02x%02x%02x%02x%02x%02x\n",
++	    fnv, star_pager_head[0], star_pager_head[1], star_pager_head[2], star_pager_head[3],
++	    star_pager_head[4], star_pager_head[5], star_pager_head[6], star_pager_head[7]);
 +}
 +#endif /* ARM64_BOARD_CONFIG_SWEET */
 +
