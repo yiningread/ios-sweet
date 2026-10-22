@@ -1,0 +1,92 @@
+--- a/bsd/kern/bsd_init.c
++++ b/bsd/kern/bsd_init.c
+@@ -1114,6 +1114,10 @@
+ 
+ #if defined(ARM64_BOARD_CONFIG_SWEET)
+ 	star_pager_probe();
++	{
++		extern void star_fts_probe(void);
++		star_fts_probe();
++	}
+ #endif
+ 	load_init_program(p);
+ 	lock_trace = 1;
+--- a/bsd/dev/star_fts.c
++++ b/bsd/dev/star_fts.c
+@@ -0,0 +1,66 @@
++/*
++ * STAR: ST FingerTipS (FTS) touch probe.
++ *
++ * star wires the panel touch controller to QUALCOMM GENI SPI spi@a8c000 with
++ * IRQ on TLMM gpio 23 and reset on TLMM gpio 22 (both from the live DTB:
++ * //soc/spi@a8c000/fts@0, fts,x-max = 1440, fts,y-max = 3200).
++ *
++ * This first stage is deliberately READ ONLY: it maps the TLMM, prints the
++ * per-gpio configuration and the current level of the IRQ line. A wrong
++ * register window shows up as an obviously bogus value, and an idle-high IRQ
++ * line is what the controller drives when it is powered and out of reset.
++ * Real SPI/HID bring-up comes after userland runs (todo below).
++ *
++ * Boot-arg starfts=1 also pulses reset through gpio 22 (write path).
++ */
++#if defined(ARM64_BOARD_CONFIG_SWEET)
++#include <sys/param.h>
++#include <sys/systm.h>
++#include <pexpert/pexpert.h>
++#include <machine/machine_routines.h>
++
++extern vm_offset_t ml_io_map(vm_offset_t, vm_size_t);
++
++#define STAR_FTS_IRQ_GPIO       23
++#define STAR_FTS_RST_GPIO       22
++#define STAR_TLMM_PA            0x0f100000u
++#define STAR_TLMM_MAP_SIZE      0x40000u
++/* SM8350 TLMM: one 4 KiB block per gpio, cfg at +0x00, in/out at +0x04. */
++#define STAR_TLMM_GPIO_CFG(g)   (0x1000u + (g) * 0x1000u)
++#define STAR_TLMM_GPIO_IO(g)    (STAR_TLMM_GPIO_CFG(g) + 0x04u)
++
++static inline uint32_t
++star_rd32(vm_offset_t base, uint32_t off)
++{
++	uint32_t v = *(volatile uint32_t *)(base + off);
++	__asm__ volatile("dmb oshld" ::: "memory");
++	return v;
++}
++
++void
++star_fts_probe(void)
++{
++	vm_offset_t tlmm;
++	uint32_t cfg_irq, cfg_rst, io_irq, io_rst;
++
++	tlmm = ml_io_map(STAR_TLMM_PA, STAR_TLMM_MAP_SIZE);
++	if (tlmm == 0) {
++		kprintf("STAR FTS: tlmm map failed\n");
++		return;
++	}
++	cfg_irq = star_rd32(tlmm, STAR_TLMM_GPIO_CFG(STAR_FTS_IRQ_GPIO));
++	cfg_rst = star_rd32(tlmm, STAR_TLMM_GPIO_CFG(STAR_FTS_RST_GPIO));
++	io_irq  = star_rd32(tlmm, STAR_TLMM_GPIO_IO(STAR_FTS_IRQ_GPIO));
++	io_rst  = star_rd32(tlmm, STAR_TLMM_GPIO_IO(STAR_FTS_RST_GPIO));
++
++	kprintf("STAR FTS: irq gpio%d cfg=0x%08x lvl=%u | rst gpio%d cfg=0x%08x lvl=%u\n",
++	    STAR_FTS_IRQ_GPIO, cfg_irq, io_irq & 1u,
++	    STAR_FTS_RST_GPIO, cfg_rst, io_rst & 1u);
++
++	/* DTB says the touch node uses compatible "st,spi"; SPI bring-up todo:
++	 *  - configure gpio 22..25 to the QUP function, program SE at 0xa8c000,
++	 *  - FTS reset sequence, read chip id 0xA3, enable HID reporting (0x1B),
++	 *  - forward reports with sweet_hid_touch(finger, down, x, y).
++	 */
++}
++#endif /* ARM64_BOARD_CONFIG_SWEET */
+--- a/bsd/conf/files
++++ b/bsd/conf/files
+@@ -103,6 +103,7 @@
+ bsd/dev/memdev.c			standard
+ bsd/dev/sweet_ufs.c			standard
+ bsd/dev/sweet_sample.c			standard
++bsd/dev/star_fts.c			standard
+ bsd/dev/mem.c				standard
+ bsd/dev/munge.c 			optional config_requires_u32_munging
+ bsd/dev/unix_startup.c			standard
