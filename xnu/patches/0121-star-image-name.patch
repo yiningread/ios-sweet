@@ -1,0 +1,37 @@
+--- a/osfmk/arm64/sleh.c
++++ b/osfmk/arm64/sleh.c
+@@ -1396,6 +1396,34 @@
+ 						kprintf("STAR DYLD: infos=0x%llx base=0x%llx\n",
+ 						    (uint64_t)tk->all_image_info_addr, dbase);
+ 					}
++					/* walk the image array and name the image that contains pc */
++					{
++						uint32_t hdr[2] = { 0, 0 };
++						uint64_t arr = 0;
++						if (copyin((user_addr_t)tk->all_image_info_addr,
++						    hdr, sizeof(hdr)) == 0 &&
++						    copyin((user_addr_t)(tk->all_image_info_addr + 0x8),
++						    &arr, sizeof(arr)) == 0 &&
++						    arr != 0 && hdr[1] < 4096) {
++							uint64_t pc = (uint64_t)ss64->pc;
++							for (uint32_t ai = 0; ai < hdr[1]; ai++) {
++								uint64_t ent[3] = { 0, 0, 0 };
++								if (copyin((user_addr_t)(arr + (uint64_t)ai * 24),
++								    ent, sizeof(ent)) != 0) {
++									break;
++								}
++								if (pc >= ent[0] && pc < ent[0] + 0x4000000ULL) {
++									char path[96];
++									path[0] = 0;
++									(void)copyin((user_addr_t)ent[1], path, sizeof(path) - 1);
++									path[sizeof(path) - 1] = 0;
++									kprintf("STAR IMG: pc=0x%llx base=0x%llx path=%s\n",
++									    pc, ent[0], path);
++									break;
++								}
++							}
++						}
++					}
+ 				}
+ 			}
+ 			kprintf("STAR A: pc=%08x%08x lr=%08x%08x x19=%08x%08x far=%08x%08x\n",
