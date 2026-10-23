@@ -1,0 +1,25 @@
+--- a/osfmk/arm64/sleh.c
++++ b/osfmk/arm64/sleh.c
+@@ -1391,9 +1391,22 @@
+ 		    star_pager_head[2], star_pager_head[3], star_pager_head[4],
+ 		    star_pager_head[5], star_pager_head[6], star_pager_head[7]);
+ 		arm_saved_state64_t *ss64 = saved_state64(state);
++star_quiet:
+ 		kprintf("STAR UABORT: esr=0x%x far=0x%llx pc=0x%llx lr=0x%llx fp=0x%llx x19=0x%llx\n",
+ 		    esr, (uint64_t)fault_addr, (uint64_t)ss64->pc,
+ 		    (uint64_t)ss64->x[30], (uint64_t)ss64->x[29], (uint64_t)ss64->x[19]);
++		{
++			static int star_aborts;
++			star_aborts++;
++			if (star_aborts > 3 && (star_aborts & 63) == 0) {
++				kprintf("STAR ABORT#%d: pc=0x%llx lr=0x%llx far=0x%llx\n",
++				    star_aborts, (uint64_t)ss64->pc, (uint64_t)ss64->x[30],
++				    (uint64_t)fault_addr);
++			}
++			if (star_aborts > 3) {
++				goto star_quiet;
++			}
++		}
+ 		if ((uint64_t)ss64->pc > 0x100000000ULL) {
+ 			{
+ 				/* 打印 pc-16 起的 32 字节指令：不依赖基址即可唯一定位 */
